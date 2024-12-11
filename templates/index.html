@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片上传与转换</title>
+    <style>
+        #result {
+            margin-top: 20px;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>上传图片进行转换</h1>
+    <form id="upload-form" action="/upload" method="post" enctype="multipart/form-data">
+        <input type="file" name="file" accept="image/*" required>
+        <div>
+            <label for="conversion_type">选择转换类型:</label>
+            <select name="conversion_type" id="conversion_type" required>
+                <option value="pixelate">像素化</option>
+                <option value="grayscale">灰度</option>
+            </select>
+        </div>
+        <button type="submit">上传并转换</button>
+    </form>
+
+    <div id="result">
+        <h2>转换结果:</h2>
+        <img id="result-image" src="" alt="转换后的图片" />
+        <br>
+        <button id="save-button" style="display:none;">保存图片</button>
+    </div>
+
+    <script>
+        document.getElementById('upload-form').onsubmit = async function(event) {
+            event.preventDefault(); // 防止表单提交后刷新页面
+
+            let formData = new FormData(this);
+            let response = await fetch('/upload', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (response.ok) {
+                // 获取转换后的图片链接
+                const imageBlob = await response.blob();
+                const imageUrl = URL.createObjectURL(imageBlob);
+
+                // 显示转换后的图片
+                document.getElementById('result-image').src = imageUrl;
+                document.getElementById('save-button').style.display = 'block';
+            } else {
+                const errorMsg = await response.json();
+                alert(errorMsg.error);
+            }
+        };
+
+        document.getElementById('save-button').onclick = function() {
+            const link = document.createElement('a');
+            link.href = document.getElementById('result-image').src;
+            link.download = 'result.png';
+            link.click();
+        };
+    </script>
+</body>
+</html>
