@@ -23,6 +23,20 @@
             <select name="conversion_type" id="conversion_type" required>
                 <option value="edge_detection">边缘检测</option>
                 <option value="grayscale">灰度</option>
+                <option value="enhancement">图像增强</option>
+            </select>
+        </div>
+        <div id="enhancement-options" style="display:none;">
+            <label for="enhancement_type">选择增强方法:</label>
+            <select name="enhancement_type" id="enhancement_type">
+                <option value="histogram_equalization">直方图均衡化</option>
+                <option value="contrast_stretching">对比度拉伸</option>
+                <option value="gamma_correction">伽马校正</option>
+                <option value="color_enhancement">色彩增强</option>
+                <option value="sharpening">锐化</option>
+                <option value="high_pass_filter">高通滤波</option>
+                <option value="low_pass_filter">低通滤波</option>
+                <option value="wavelet_transform">小波变换</option>
             </select>
         </div>
         <button type="submit">上传并转换</button>
@@ -38,7 +52,7 @@
 
     <script>
         document.getElementById('upload-form').onsubmit = async function(event) {
-            event.preventDefault(); // 防止表单提交后刷新页面
+            event.preventDefault();
 
             let formData = new FormData(this);
             let response = await fetch('/upload', {
@@ -47,17 +61,18 @@
             });
 
             if (response.ok) {
-                // 获取转换后的图片链接
                 const imageBlob = await response.blob();
                 const imageUrl = URL.createObjectURL(imageBlob);
-
-                // 显示转换后的图片
                 document.getElementById('result-image').src = imageUrl;
                 document.getElementById('save-button').style.display = 'block';
             } else {
                 const errorMsg = await response.json();
                 alert(errorMsg.error);
             }
+        };
+
+        document.getElementById('conversion_type').onchange = function() {
+            document.getElementById('enhancement-options').style.display = this.value === 'enhancement' ? 'block' : 'none';
         };
 
         document.getElementById('save-button').onclick = function() {
