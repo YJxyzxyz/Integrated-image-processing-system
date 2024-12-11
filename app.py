@@ -1,5 +1,5 @@
 from flask import Flask, request, render_template, send_file, jsonify
-from PIL import Image
+from PIL import Image, ImageFilter
 import os
 import io
 
@@ -11,11 +11,9 @@ RESULT_FOLDER = 'results'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(RESULT_FOLDER, exist_ok=True)
 
-
 @app.route('/')
 def index():
     return render_template('index.html')
-
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
@@ -43,22 +41,19 @@ def upload_file():
         img_io.seek(0)
 
         # 生成可访问的图片URL
-        return send_file(img_io, mimetype='image/png')
-
+        return send_file(img_io, mimetype='image/png', download_name='result.png')
 
 def convert_image(image_path, conversion_type):
     img = Image.open(image_path)
 
-    if conversion_type == 'pixelate':
-        # 像素化处理
-        img = img.resize((16, 16), Image.NEAREST)
-        img = img.resize(img.size, Image.NEAREST)
+    if conversion_type == 'edge_detection':
+        # 边缘检测处理
+        img = img.filter(ImageFilter.FIND_EDGES)
     elif conversion_type == 'grayscale':
         # 灰度处理
         img = img.convert('L')
 
     return img
-
 
 if __name__ == '__main__':
     app.run(debug=True)

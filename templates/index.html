@@ -21,7 +21,7 @@
         <div>
             <label for="conversion_type">选择转换类型:</label>
             <select name="conversion_type" id="conversion_type" required>
-                <option value="pixelate">像素化</option>
+                <option value="edge_detection">边缘检测</option>
                 <option value="grayscale">灰度</option>
             </select>
         </div>
@@ -32,6 +32,7 @@
         <h2>转换结果:</h2>
         <img id="result-image" src="" alt="转换后的图片" />
         <br>
+        <input type="text" id="filename" placeholder="输入文件名" />
         <button id="save-button" style="display:none;">保存图片</button>
     </div>
 
@@ -62,7 +63,8 @@
         document.getElementById('save-button').onclick = function() {
             const link = document.createElement('a');
             link.href = document.getElementById('result-image').src;
-            link.download = 'result.png';
+            const filename = document.getElementById('filename').value || 'result.png';
+            link.download = filename.endsWith('.png') ? filename : filename + '.png';
             link.click();
         };
     </script>
