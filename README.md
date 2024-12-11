@@ -20,3 +20,10 @@
 - `max_decomposition`：最大值作为灰度值。
 - `min_decomposition`：最小值作为灰度值。
 - `custom_weights`：基于自定义的权重（50%红色、30%绿色、20%蓝色）
+
+实现多种边缘检测方法
+
+- Sobel算子
+- Laplacian算子
+- Canny边缘检测
+- Prewitt算子
