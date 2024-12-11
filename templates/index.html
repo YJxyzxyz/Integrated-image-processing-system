@@ -22,10 +22,23 @@
             <label for="conversion_type">选择转换类型:</label>
             <select name="conversion_type" id="conversion_type" required>
                 <option value="edge_detection">边缘检测</option>
-                <option value="grayscale">灰度</option>
+                <option value="grayscale">灰度化</option>
                 <option value="enhancement">图像增强</option>
             </select>
         </div>
+
+        <div id="grayscale-options" style="display:none;">
+            <label for="grayscale_type">选择灰度化方法:</label>
+            <select name="grayscale_type" id="grayscale_type">
+                <option value="luminosity">亮度法</option>
+                <option value="average">平均法</option>
+                <option value="desaturation">去饱和法</option>
+                <option value="max_decomposition">最大分解法</option>
+                <option value="min_decomposition">最小分解法</option>
+                <option value="custom_weights">自定义权重法</option>
+            </select>
+        </div>
+
         <div id="enhancement-options" style="display:none;">
             <label for="enhancement_type">选择增强方法:</label>
             <select name="enhancement_type" id="enhancement_type">
@@ -72,7 +85,11 @@
         };
 
         document.getElementById('conversion_type').onchange = function() {
-            document.getElementById('enhancement-options').style.display = this.value === 'enhancement' ? 'block' : 'none';
+            const enhancementOptions = document.getElementById('enhancement-options');
+            const grayscaleOptions = document.getElementById('grayscale-options');
+
+            enhancementOptions.style.display = this.value === 'enhancement' ? 'block' : 'none';
+            grayscaleOptions.style.display = this.value === 'grayscale' ? 'block' : 'none';
         };
 
         document.getElementById('save-button').onclick = function() {
