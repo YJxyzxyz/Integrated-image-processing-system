@@ -27,6 +27,16 @@
             </select>
         </div>
 
+        <div id="edge-detection-options" style="display:none;">
+            <label for="edge_detection_type">选择边缘检测方法:</label>
+            <select name="edge_detection_type" id="edge_detection_type">
+                <option value="sobel">Sobel算子</option>
+                <option value="laplacian">Laplacian算子</option>
+                <option value="canny">Canny边缘检测</option>
+                <option value="prewitt">Prewitt算子</option>
+            </select>
+        </div>
+
         <div id="grayscale-options" style="display:none;">
             <label for="grayscale_type">选择灰度化方法:</label>
             <select name="grayscale_type" id="grayscale_type">
@@ -64,6 +74,16 @@
     </div>
 
     <script>
+        document.getElementById('conversion_type').onchange = function() {
+            const enhancementOptions = document.getElementById('enhancement-options');
+            const grayscaleOptions = document.getElementById('grayscale-options');
+            const edgeDetectionOptions = document.getElementById('edge-detection-options');
+
+            enhancementOptions.style.display = this.value === 'enhancement' ? 'block' : 'none';
+            grayscaleOptions.style.display = this.value === 'grayscale' ? 'block' : 'none';
+            edgeDetectionOptions.style.display = this.value === 'edge_detection' ? 'block' : 'none';
+        };
+
         document.getElementById('upload-form').onsubmit = async function(event) {
             event.preventDefault();
 
@@ -82,14 +102,6 @@
                 const errorMsg = await response.json();
                 alert(errorMsg.error);
             }
-        };
-
-        document.getElementById('conversion_type').onchange = function() {
-            const enhancementOptions = document.getElementById('enhancement-options');
-            const grayscaleOptions = document.getElementById('grayscale-options');
-
-            enhancementOptions.style.display = this.value === 'enhancement' ? 'block' : 'none';
-            grayscaleOptions.style.display = this.value === 'grayscale' ? 'block' : 'none';
         };
 
         document.getElementById('save-button').onclick = function() {

@@ -34,14 +34,15 @@ def upload_file():
         conversion_type = request.form.get('conversion_type')
         enhancement_type = request.form.get('enhancement_type')
         grayscale_type = request.form.get('grayscale_type')
+        edge_detection_type = request.form.get('edge_detection_type')
 
         try:
             if conversion_type == 'grayscale':
-                result_image = convert_image(file_path, conversion_type, grayscale_type)
+                result_image = convert_image(file_path, conversion_type, grayscale_type=grayscale_type)
             elif conversion_type == 'enhancement':
                 result_image = enhance_image(file_path, enhancement_type)
             elif conversion_type == 'edge_detection':
-                result_image = convert_image(file_path, conversion_type)
+                result_image = convert_image(file_path, conversion_type, edge_detection_type=edge_detection_type)
             else:
                 return jsonify({'error': '无效的转换类型！'}), 400
 
@@ -52,11 +53,29 @@ def upload_file():
         except Exception as e:
             return jsonify({'error': f'处理失败: {str(e)}'}), 500
 
-def convert_image(image_path, conversion_type, grayscale_type=None):
+def convert_image(image_path, conversion_type, grayscale_type=None, edge_detection_type=None):
     img = Image.open(image_path)
 
     if conversion_type == 'edge_detection':
-        img = img.filter(ImageFilter.FIND_EDGES)
+        img_array = np.array(img.convert('L'))  # 转换为灰度图像
+        if edge_detection_type == 'sobel':
+            sobel_x = cv2.Sobel(img_array, cv2.CV_64F, 1, 0, ksize=3)
+            sobel_y = cv2.Sobel(img_array, cv2.CV_64F, 0, 1, ksize=3)
+            edge = np.sqrt(sobel_x**2 + sobel_y**2)
+        elif edge_detection_type == 'laplacian':
+            edge = cv2.Laplacian(img_array, cv2.CV_64F)
+        elif edge_detection_type == 'canny':
+            edge = cv2.Canny(img_array, 100, 200)  # 设置阈值
+        elif edge_detection_type == 'prewitt':
+            kernel_x = np.array([[-1, 0, 1], [-1, 0, 1], [-1, 0, 1]])
+            kernel_y = np.array([[1, 1, 1], [0, 0, 0], [-1, -1, -1]])
+            prewitt_x = cv2.filter2D(img_array, -1, kernel_x)
+            prewitt_y = cv2.filter2D(img_array, -1, kernel_y)
+            edge = np.sqrt(prewitt_x**2 + prewitt_y**2)
+        else:
+            raise ValueError("无效的边缘检测方法")
+        edge = (edge / edge.max() * 255).astype(np.uint8)
+        img = Image.fromarray(edge)
     elif conversion_type == 'grayscale':
         img_array = np.array(img)
         if grayscale_type == 'luminosity':
@@ -70,7 +89,6 @@ def convert_image(image_path, conversion_type, grayscale_type=None):
         elif grayscale_type == 'min_decomposition':
             gray = img_array.min(axis=2)
         elif grayscale_type == 'custom_weights':
-            # Custom weights: 50% red, 30% green, 20% blue
             gray = 0.5 * img_array[:, :, 0] + 0.3 * img_array[:, :, 1] + 0.2 * img_array[:, :, 2]
         else:
             raise ValueError("无效的灰度化方法")
@@ -129,3 +147,4 @@ def enhance_image(image_path, enhancement_type):
 
 if __name__ == '__main__':
     app.run(debug=True)
+
