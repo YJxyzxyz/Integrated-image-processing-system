@@ -13,9 +13,11 @@ RESULT_FOLDER = 'results'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(RESULT_FOLDER, exist_ok=True)
 
+
 @app.route('/')
 def index():
     return render_template('index.html')
+
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
@@ -32,17 +34,15 @@ def upload_file():
         file.save(file_path)
 
         conversion_type = request.form.get('conversion_type')
-        enhancement_type = request.form.get('enhancement_type')
-        grayscale_type = request.form.get('grayscale_type')
-        edge_detection_type = request.form.get('edge_detection_type')
+        method_type = request.form.get('method_type')
 
         try:
             if conversion_type == 'grayscale':
-                result_image = convert_image(file_path, conversion_type, grayscale_type=grayscale_type)
+                result_image = convert_image(file_path, method_type)
             elif conversion_type == 'enhancement':
-                result_image = enhance_image(file_path, enhancement_type)
-            elif conversion_type == 'edge_detection':
-                result_image = convert_image(file_path, conversion_type, edge_detection_type=edge_detection_type)
+                result_image = enhance_image(file_path, method_type)
+            elif conversion_type == 'segmentation':
+                result_image = segment_image(file_path, method_type)
             else:
                 return jsonify({'error': '无效的转换类型！'}), 400
 
@@ -53,48 +53,28 @@ def upload_file():
         except Exception as e:
             return jsonify({'error': f'处理失败: {str(e)}'}), 500
 
-def convert_image(image_path, conversion_type, grayscale_type=None, edge_detection_type=None):
+
+def convert_image(image_path, grayscale_type):
     img = Image.open(image_path)
 
-    if conversion_type == 'edge_detection':
-        img_array = np.array(img.convert('L'))  # 转换为灰度图像
-        if edge_detection_type == 'sobel':
-            sobel_x = cv2.Sobel(img_array, cv2.CV_64F, 1, 0, ksize=3)
-            sobel_y = cv2.Sobel(img_array, cv2.CV_64F, 0, 1, ksize=3)
-            edge = np.sqrt(sobel_x**2 + sobel_y**2)
-        elif edge_detection_type == 'laplacian':
-            edge = cv2.Laplacian(img_array, cv2.CV_64F)
-        elif edge_detection_type == 'canny':
-            edge = cv2.Canny(img_array, 100, 200)  # 设置阈值
-        elif edge_detection_type == 'prewitt':
-            kernel_x = np.array([[-1, 0, 1], [-1, 0, 1], [-1, 0, 1]])
-            kernel_y = np.array([[1, 1, 1], [0, 0, 0], [-1, -1, -1]])
-            prewitt_x = cv2.filter2D(img_array, -1, kernel_x)
-            prewitt_y = cv2.filter2D(img_array, -1, kernel_y)
-            edge = np.sqrt(prewitt_x**2 + prewitt_y**2)
-        else:
-            raise ValueError("无效的边缘检测方法")
-        edge = (edge / edge.max() * 255).astype(np.uint8)
-        img = Image.fromarray(edge)
-    elif conversion_type == 'grayscale':
-        img_array = np.array(img)
-        if grayscale_type == 'luminosity':
-            gray = 0.21 * img_array[:, :, 0] + 0.72 * img_array[:, :, 1] + 0.07 * img_array[:, :, 2]
-        elif grayscale_type == 'average':
-            gray = img_array.mean(axis=2)
-        elif grayscale_type == 'desaturation':
-            gray = (img_array.max(axis=2) + img_array.min(axis=2)) / 2
-        elif grayscale_type == 'max_decomposition':
-            gray = img_array.max(axis=2)
-        elif grayscale_type == 'min_decomposition':
-            gray = img_array.min(axis=2)
-        elif grayscale_type == 'custom_weights':
-            gray = 0.5 * img_array[:, :, 0] + 0.3 * img_array[:, :, 1] + 0.2 * img_array[:, :, 2]
-        else:
-            raise ValueError("无效的灰度化方法")
-        img = Image.fromarray(gray.astype(np.uint8))
+    img_array = np.array(img)
+    if grayscale_type == 'luminosity':
+        gray = 0.21 * img_array[:, :, 0] + 0.72 * img_array[:, :, 1] + 0.07 * img_array[:, :, 2]
+    elif grayscale_type == 'average':
+        gray = img_array.mean(axis=2)
+    elif grayscale_type == 'desaturation':
+        gray = (img_array.max(axis=2) + img_array.min(axis=2)) / 2
+    elif grayscale_type == 'max_decomposition':
+        gray = img_array.max(axis=2)
+    elif grayscale_type == 'min_decomposition':
+        gray = img_array.min(axis=2)
+    elif grayscale_type == 'custom_weights':
+        gray = 0.5 * img_array[:, :, 0] + 0.3 * img_array[:, :, 1] + 0.2 * img_array[:, :, 2]
+    else:
+        raise ValueError("无效的灰度化方法")
 
-    return img
+    return Image.fromarray(gray.astype(np.uint8))
+
 
 def enhance_image(image_path, enhancement_type):
     img = Image.open(image_path)
@@ -126,25 +106,91 @@ def enhance_image(image_path, enhancement_type):
         img_sharpened = Image.fromarray(cv2.filter2D(img_array, -1, kernel))
         return img_sharpened
     elif enhancement_type == 'high_pass_filter':
-        img_array = np.array(img)
-        kernel = np.array([[0, -1, 0],
-                           [-1, 5, -1],
-                           [0, -1, 0]])
-        img_filtered = Image.fromarray(cv2.filter2D(img_array, -1, kernel))
-        return img_filtered
+        kernel = np.array([[-1, -1, -1],
+                           [-1, 8, -1],
+                           [-1, -1, -1]])
+        img_array = np.array(img.convert('L'))
+        img_filtered = cv2.filter2D(img_array, -1, kernel)
+        img_filtered = np.clip(img_filtered, 0, 255).astype(np.uint8)
+        return Image.fromarray(img_filtered)
     elif enhancement_type == 'low_pass_filter':
-        img_array = np.array(img)
         kernel = np.ones((5, 5), np.float32) / 25
-        img_filtered = Image.fromarray(cv2.filter2D(img_array, -1, kernel))
-        return img_filtered
+        img_array = np.array(img.convert('L'))
+        img_filtered = cv2.filter2D(img_array, -1, kernel)
+        img_filtered = np.clip(img_filtered, 0, 255).astype(np.uint8)
+        return Image.fromarray(img_filtered)
     elif enhancement_type == 'wavelet_transform':
-        img_array = np.array(img)
-        coeffs = pywt.wavedec2(img_array, 'haar')
+        img_array = np.array(img.convert('L'))
+        coeffs = pywt.wavedec2(img_array, 'haar', level=2)
+        coeffs[0] = np.zeros_like(coeffs[0])
         img_wavelet = pywt.waverec2(coeffs, 'haar')
-        return Image.fromarray(np.clip(img_wavelet, 0, 255).astype(np.uint8))
+        img_wavelet = np.clip(img_wavelet, 0, 255).astype(np.uint8)
+        return Image.fromarray(img_wavelet)
     else:
         raise ValueError("无效的增强方法")
 
+
+def segment_image(image_path, segmentation_type):
+    img = Image.open(image_path)
+    img_array = np.array(img.convert('L'))
+
+    if segmentation_type == 'thresholding':
+        _, segmented = cv2.threshold(img_array, 128, 255, cv2.THRESH_BINARY)
+        img = Image.fromarray(segmented)
+    elif segmentation_type == 'region_growing':
+        def region_grow(img, seed, threshold=30):
+            visited = np.zeros_like(img, dtype=bool)
+            region = np.zeros_like(img, dtype=np.uint8)
+            stack = [seed]
+            seed_value = img[seed]
+
+            while stack:
+                x, y = stack.pop()
+                if not visited[x, y] and abs(int(img[x, y]) - int(seed_value)) <= threshold:
+                    visited[x, y] = True
+                    region[x, y] = 255
+                    for nx, ny in [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)]:
+                        if 0 <= nx < img.shape[0] and 0 <= ny < img.shape[1] and not visited[nx, ny]:
+                            stack.append((nx, ny))
+            return region
+
+        # 使用高斯模糊减少噪声
+        img_smoothed = cv2.GaussianBlur(img_array, (5, 5), 0)
+        seed = (img_smoothed.shape[0] // 2, img_smoothed.shape[1] // 2)  # 中心点
+        segmented = region_grow(img_smoothed, seed, threshold=30)
+    elif segmentation_type == 'kmeans':
+        img_array = img_array.reshape(-1, 1).astype(np.float32)
+        criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
+        _, labels, centers = cv2.kmeans(img_array, 2, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
+        segmented = centers[labels.flatten()].reshape(img.size[::-1]).astype(np.uint8)
+        img = Image.fromarray(segmented)
+    elif segmentation_type == 'sobel':
+        sobel_x = cv2.Sobel(img_array, cv2.CV_64F, 1, 0, ksize=3)
+        sobel_y = cv2.Sobel(img_array, cv2.CV_64F, 0, 1, ksize=3)
+        edge = np.sqrt(sobel_x ** 2 + sobel_y ** 2)
+        edge = (edge / edge.max() * 255).astype(np.uint8)
+        img = Image.fromarray(edge)
+    elif segmentation_type == 'laplacian':
+        edge = cv2.Laplacian(img_array, cv2.CV_64F, ksize=3)  # 使用3x3核增强细节
+        edge = cv2.convertScaleAbs(edge)  # 取绝对值以避免负值
+        edge = cv2.equalizeHist(edge)  # 进行直方图均衡化
+        img = Image.fromarray(edge)
+    elif segmentation_type == 'canny':
+        edge = cv2.Canny(img_array, 100, 200)
+        img = Image.fromarray(edge)
+    elif segmentation_type == 'prewitt':
+        kernel_x = np.array([[-1, 0, 1], [-1, 0, 1], [-1, 0, 1]])
+        kernel_y = np.array([[1, 1, 1], [0, 0, 0], [-1, -1, -1]])
+        prewitt_x = cv2.filter2D(img_array, -1, kernel_x)
+        prewitt_y = cv2.filter2D(img_array, -1, kernel_y)
+        edge = np.sqrt(prewitt_x ** 2 + prewitt_y ** 2)
+        edge = (edge / edge.max() * 255).astype(np.uint8)
+        img = Image.fromarray(edge)
+    else:
+        raise ValueError("无效的分割方法")
+
+    return img
+
+
 if __name__ == '__main__':
     app.run(debug=True)
-
