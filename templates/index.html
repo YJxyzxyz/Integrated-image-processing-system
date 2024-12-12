@@ -134,6 +134,7 @@
                     <option value="grayscale">灰度化</option>
                     <option value="enhancement">图像增强</option>
                     <option value="segmentation">图像分割</option>
+                    <option value="object_detection">目标检测</option>
                 </select>
             </div>
 
@@ -191,6 +192,9 @@
                 { value: 'laplacian', text: 'Laplacian算子' },
                 { value: 'canny', text: 'Canny边缘检测' },
                 { value: 'prewitt', text: 'Prewitt算子' }
+            ],
+            object_detection: [
+                { value: 'object_detection', text: '目标检测 (YOLOv5)' }
             ]
         };
 

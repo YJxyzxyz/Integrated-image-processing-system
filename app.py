@@ -1,10 +1,11 @@
 from flask import Flask, request, render_template, send_file, jsonify
-from PIL import Image, ImageOps, ImageFilter
+from PIL import Image, ImageOps, ImageFilter, ImageDraw
 import numpy as np
 import os
 import io
 import pywt
 import cv2
+from ultralytics import YOLO
 
 app = Flask(__name__)
 
@@ -13,6 +14,14 @@ RESULT_FOLDER = 'results'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(RESULT_FOLDER, exist_ok=True)
 
+# 加载 YOLOv5 模型
+def load_yolo_model(model_path):
+    model = YOLO(model_path).cuda()
+    return model
+
+# 使用您上传的模型路径
+yolo_model_path = './models/yolov5su.pt'
+yolo_model = load_yolo_model(yolo_model_path)
 
 @app.route('/')
 def index():
@@ -43,6 +52,8 @@ def upload_file():
                 result_image = enhance_image(file_path, method_type)
             elif conversion_type == 'segmentation':
                 result_image = segment_image(file_path, method_type)
+            elif conversion_type == 'object_detection':
+                result_image = apply_yolo_detection(file_path)
             else:
                 return jsonify({'error': '无效的转换类型！'}), 400
 
@@ -191,6 +202,22 @@ def segment_image(image_path, segmentation_type):
 
     return img
 
+# 应用 YOLOv5 目标检测
+def apply_yolo_detection(image_path):
+    # 使用 YOLO 进行推理
+    results = yolo_model(image_path)
+    # 获取检测结果
+    img = Image.open(image_path).convert("RGB")
+    draw = ImageDraw.Draw(img)
+
+    # 绘制边界框
+    for result in results[0].boxes.data:  # 每个检测框
+        x1, y1, x2, y2, confidence, cls_id = result[:6]
+        cls_name = yolo_model.names[int(cls_id)]  # 获取类名
+        draw.rectangle([x1, y1, x2, y2], outline="red", width=2)
+        draw.text((x1, y1), f"{cls_name} {confidence:.2f}", fill="red")
+
+    return img
 
 if __name__ == '__main__':
     app.run(debug=True)
