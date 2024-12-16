@@ -32,10 +32,15 @@
 
 初步优化前端形式，重新调整图像分割类别，新增区域生长 Kmeans分类 阈值分割
 
-新增深度学习方法--YOLOv5目标检测(yolov5su.pt)
+新增深度学习方法--YOLOv5目标检测(yolov5su.pt)（[Releases · ultralytics/yolov5](https://github.com/ultralytics/yolov5/releases)）
 
 
 
 2024.12.13
 
-新增深度学习方法--Fast R-CNN目标检测模型(fasterrcnn_resnet50_fpn_coco-258fb6c6.pth)
+新增深度学习方法--Fast R-CNN目标检测模型(fasterrcnn_resnet50_fpn_coco-258fb6c6.pth)（https://download.pytorch.org/models/fasterrcnn_resnet50_fpn_coco-258fb6c6.pth）
+
+2024.12.14
+
+新增去雾 暗通道 AOD
+
