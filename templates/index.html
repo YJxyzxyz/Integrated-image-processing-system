@@ -135,6 +135,7 @@
                     <option value="enhancement">图像增强</option>
                     <option value="segmentation">图像分割</option>
                     <option value="object_detection">目标检测</option>
+                    <option value="dehaze">去雾</option>>
                 </select>
             </div>
 
@@ -196,6 +197,10 @@
             object_detection: [
                 { value: 'yolo', text: 'YOLOv5' },
                 { value: 'faster_rcnn', text: 'Faster R-CNN' }
+            ],
+            dehaze: [
+                { value: 'dark_channel', text: '暗通道' },
+                { value: 'aod_net', text: 'AOD-Net' }
             ]
         };
 
