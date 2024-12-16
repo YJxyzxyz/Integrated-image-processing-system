@@ -40,7 +40,10 @@
 
 新增深度学习方法--Fast R-CNN目标检测模型(fasterrcnn_resnet50_fpn_coco-258fb6c6.pth)（https://download.pytorch.org/models/fasterrcnn_resnet50_fpn_coco-258fb6c6.pth）
 
-2024.12.14
+2024.12.16
 
 新增去雾 暗通道 AOD
 
+2024.12.17
+
+AOD由于原作者的版本为3.6，我使用的python版本是3.9.11，需重构加载函数，并对模型输出的图片重新调整过一化处理过程，原处理方式输出图片带有灰蒙蒙一片，待解决
