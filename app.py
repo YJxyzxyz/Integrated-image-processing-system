@@ -10,8 +10,8 @@ import torch
 import torchvision.transforms as transforms
 from torchvision.transforms import functional as F
 from torchvision.models.detection import fasterrcnn_resnet50_fpn
-from aodnet import AODnet  # 导入 AOD-Net 模型定义
 from torch.autograd import Variable
+from model import AODnet  # 导入 AOD-Net 模型定义
 
 app = Flask(__name__)
 
@@ -22,9 +22,10 @@ os.makedirs(RESULT_FOLDER, exist_ok=True)
 
 # 加载 AOD-Net 模型
 def load_aod_net(model_path):
-    net = AODnet()
-    net.load_state_dict(torch.load(model_path))
-    net = net.cuda()
+    # net = AODnet()
+    # net.load_state_dict(torch.load(model_path))
+    # net = net.cuda()
+    net = torch.load(model_path)
     return net
 
 # 加载 YOLOv5 模型
@@ -318,6 +319,9 @@ def dehaze_aod_net(image_path):
     img = Image.open(image_path).convert("RGB")
     img_tensor = transform(img).unsqueeze_(0)  # 增加 batch 维度
     val_img = Variable(img_tensor)
+    cuda_available = torch.cuda.is_available()
+    if cuda_available:
+        val_img = val_img.cuda()
     #val_img = val_img.cuda()
 
     prediction = net(val_img)
