@@ -73,6 +73,8 @@ def upload_file():
         conversion_type = request.form.get('conversion_type')
         method_type = request.form.get('method_type')
 
+        print(f"转换类型: {conversion_type}, 方法: {method_type}")
+
         try:
             if conversion_type == 'grayscale':
                 result_image = convert_image(file_path, method_type)
