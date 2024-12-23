@@ -313,9 +313,10 @@ def dehaze_dark_channel(image_path):
 # AOD-Net 深度学习去雾
 def dehaze_aod_net(image_path):
     net = load_aod_net(aod_net_model_path)
+    net = net.cuda()
     transform = transforms.Compose([
         transforms.ToTensor(),
-        transforms.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
+        transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
     ])
 
     img = Image.open(image_path).convert("RGB")
@@ -328,12 +329,9 @@ def dehaze_aod_net(image_path):
 
     prediction = net(val_img)
     prediction = prediction.data.cpu().numpy().squeeze().transpose((1, 2, 0))
-    # 反归一化处理
-    mean = np.array([0.485, 0.456, 0.406])
-    std = np.array([0.229, 0.224, 0.225])
-    prediction = std * prediction + mean
-    prediction = np.clip(prediction, 0, 1) * 255.0
-    prediction = prediction.astype(np.uint8)
+
+    # 将 [0, 1] 范围的输出转换为 [0, 255] 的整数
+    prediction = (prediction * 255.0).astype(np.uint8)
 
     return Image.fromarray(prediction)
 
