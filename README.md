@@ -52,7 +52,7 @@ AOD由于原作者的版本为3.6，我使用的python版本是3.9.11，需重�
 
 AOD反归一化问题已解决，目前可以正常实现去雾，使用的原论文预训练模型AOD_net_epoch_relu_best.pth（[AODnet-by-pytorch/model_pretrained at master · weberwcwei/AODnet-by-pytorch](https://github.com/weberwcwei/AODnet-by-pytorch/tree/master/model_pretrained)）
 
-2024.12.31:point_right:2025.1.1
+2024.12.31 → 2025.1.1
 
 Happy 2025
 
