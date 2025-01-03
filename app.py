@@ -22,9 +22,6 @@ os.makedirs(RESULT_FOLDER, exist_ok=True)
 
 # 加载 AOD-Net 模型
 def load_aod_net(model_path):
-    # net = AODnet()
-    # net.load_state_dict(torch.load(model_path))
-    # net = net.cuda()
     net = torch.load(model_path)
     return net
 
@@ -46,7 +43,6 @@ def load_faster_rcnn_model(model_path):
 yolo_model_path = './models/yolov5su.pt'
 faster_rcnn_model_path = './models/fasterrcnn_resnet50_fpn_coco-258fb6c6.pth'
 aod_net_model_path = './models/AOD_net_epoch_relu_best.pth'
-
 
 yolo_model = load_yolo_model(yolo_model_path)
 faster_rcnn_model = load_faster_rcnn_model(faster_rcnn_model_path)
@@ -126,7 +122,6 @@ def convert_image(image_path, grayscale_type):
         raise ValueError("无效的灰度化方法")
 
     return Image.fromarray(gray.astype(np.uint8))
-
 
 def enhance_image(image_path, enhancement_type):
     img = Image.open(image_path)

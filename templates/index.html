@@ -329,8 +329,11 @@
         document.getElementById('upload-form').onsubmit = async function(event) {
             event.preventDefault();
 
-            loader.style.display = 'block';
+            // 重置结果图片
+            resultImage.src = '';
             resultDiv.classList.remove('show');
+
+            loader.style.display = 'block';
 
             let formData = new FormData(this);
             let response = await fetch('/upload', {
@@ -356,6 +359,12 @@
             }
 
             loader.style.display = 'none';
+
+            // 重置文件输入框
+            fileInput.value = '';
+
+            // 重置表单状态
+            this.reset();
         };
 
         saveOriginalButton.onclick = function() {
