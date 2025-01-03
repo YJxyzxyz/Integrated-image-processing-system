@@ -1,7 +1,8 @@
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.widgets import Slider, RadioButtons
+from matplotlib.widgets import Slider, RadioButtons, Button
+from tkinter import Tk, filedialog
 
 # 读取图像并转换为灰度图
 image_path = './uploads/test.jpg'  # 图像路径
@@ -120,6 +121,28 @@ def update_sliders(label):
 
 
 radio.on_clicked(update_sliders)
+
+# 创建保存按钮
+ax_save = plt.axes([0.8, 0.05, 0.1, 0.05])  # 按钮位置和大小
+save_button = Button(ax_save, 'Save')
+
+
+# 保存函数
+def save_result(event):
+    # 打开文件保存对话框
+    root = Tk()
+    root.withdraw()  # 隐藏Tkinter主窗口
+    file_path = filedialog.asksaveasfilename(
+        defaultextension=".jpg",
+        filetypes=[("JPEG files", "*.jpg"), ("PNG files", "*.png"), ("All files", "*.*")]
+    )
+    if file_path:
+        # 保存当前边缘检测结果
+        cv2.imwrite(file_path, edges)
+        print(f"结果已保存到 {file_path}")
+
+
+save_button.on_clicked(save_result)
 
 # 初始更新
 update(None)
