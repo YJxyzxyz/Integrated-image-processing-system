@@ -3,31 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>图片上传与转换</title>
+    <title>图片处理系统</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Noto Sans SC', sans-serif;
             margin: 0;
             padding: 0;
-            background: linear-gradient(to right, #6a11cb, #2575fc);
+            /* 日系风格背景：柔和的浅色渐变 */
+            background: linear-gradient(to bottom right, #fefefe, #e8f5ff);
             color: #333;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
         }
 
         header {
+            width: 100%;
             text-align: center;
             padding: 20px 0;
-            background: rgba(0, 0, 0, 0.6);
-            color: white;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-            width: 100%;
+            /* 毛玻璃效果 */
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            color: #333;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
             position: fixed;
             top: 0;
             left: 0;
+            z-index: 1000;
         }
 
         header h1 {
@@ -36,18 +42,82 @@
             text-transform: uppercase;
         }
 
-        .container {
-            max-width: 800px;
-            margin: 100px auto;
-            background: #ffffff;
-            padding: 30px;
-            box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.2);
-            border-radius: 12px;
-            transition: transform 0.3s ease;
+        .main-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            max-width: 1200px;
+            width: 90%;
+            margin: 100px auto 40px auto;
+            position: relative;
+            height: 80vh;
+            transition: all 0.5s ease;
         }
 
-        .container:hover {
-            transform: translateY(-5px);
+        .card {
+            padding: 30px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            transition: all 0.5s ease;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            opacity: 1;
+            transform: scale(1);
+            pointer-events: auto;
+        }
+
+        .card.options-card {
+            z-index: 2;
+        }
+
+        .card.result-card {
+            z-index: 1;
+            transform: scale(0.8) translateX(20%);
+            opacity: 0;
+            pointer-events: none;
+            left: 50%;
+        }
+
+        .card.minimized {
+            flex: 0 0 250px;
+            max-width: 250px;
+            height: fit-content;
+            padding: 20px;
+            top: 20px;
+            left: 20px;
+            right: auto;
+            bottom: auto;
+            cursor: pointer;
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        .card.minimized h2 {
+            font-size: 18px;
+        }
+
+        .card.expanded {
+            flex: 1;
+            transform: translateX(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .card h2 {
+            margin-top: 0;
+            font-size: 24px;
+            color: #444;
+            border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            transition: font-size 0.5s ease;
         }
 
         form {
@@ -58,7 +128,6 @@
 
         label {
             font-weight: 700;
-            margin-bottom: 5px;
             font-size: 16px;
             color: #444;
         }
@@ -66,9 +135,10 @@
         input[type="file"], select, input[type="text"], button {
             padding: 12px;
             font-size: 16px;
-            border: 1px solid #ccc;
             border-radius: 8px;
             transition: all 0.3s;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            background-color: rgba(255, 255, 255, 0.5);
         }
 
         input[type="file"], select {
@@ -76,37 +146,44 @@
         }
 
         button {
-            background-color: #2575fc;
-            color: white;
-            border: none;
+            background: rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            color: #333;
             cursor: pointer;
             font-size: 18px;
             font-weight: bold;
             text-transform: uppercase;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
         }
 
         button:hover {
-            background-color: #1b63d8;
+            background-color: rgba(255, 255, 255, 0.5);
             transform: scale(1.05);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
         }
 
         button:active {
             transform: scale(0.95);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
 
         button:disabled {
-            background-color: #ccc;
+            background-color: rgba(204, 204, 204, 0.5);
             cursor: not-allowed;
             transform: none;
         }
 
+        .hidden {
+            display: none;
+        }
+
         #result {
-            margin-top: 30px;
-            text-align: center;
             opacity: 0;
             transition: opacity 0.5s ease;
+            height: 100%;
         }
 
         #result.show {
@@ -115,27 +192,23 @@
 
         .image-container {
             display: flex;
-            justify-content: space-between;
+            flex-direction: column;
             gap: 20px;
             margin-top: 20px;
         }
 
         .image-wrapper {
-            flex: 1;
             text-align: center;
         }
 
         .image-wrapper img {
             max-width: 100%;
             height: auto;
-            border: 2px solid #ddd;
+            border: 2px solid rgba(0, 0, 0, 0.1);
             border-radius: 8px;
             box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
             transition: transform 0.3s ease;
-        }
-
-        .image-wrapper img:hover {
-            transform: scale(1.02);
+            object-fit: contain;
         }
 
         .image-wrapper p {
@@ -151,21 +224,23 @@
         }
 
         footer {
+            width: 100%;
             text-align: center;
             padding: 10px 0;
-            background: rgba(0, 0, 0, 0.6);
-            color: white;
-            margin-top: 40px;
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            color: #333;
             font-size: 14px;
-            width: 100%;
             position: fixed;
             bottom: 0;
             left: 0;
+            z-index: 1000;
         }
 
         footer a {
             text-decoration: none;
-            color: #ffffff;
+            color: #333;
             font-weight: bold;
         }
 
@@ -175,7 +250,7 @@
 
         .loader {
             border: 5px solid #f3f3f3;
-            border-top: 5px solid #2575fc;
+            border-top: 5px solid #6a11cb;
             border-radius: 50%;
             width: 50px;
             height: 50px;
@@ -188,59 +263,304 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        .selected-options {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.6);
+        }
+
+        .selected-options p {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #555;
+        }
+
+        /* 翻页动画效果 */
+        @keyframes flip-out {
+            0% { transform: rotateX(0deg); opacity: 1; }
+            100% { transform: rotateX(90deg); opacity: 0; }
+        }
+
+        @keyframes flip-in {
+            0% { transform: rotateX(-90deg); opacity: 0; }
+            100% { transform: rotateX(0deg); opacity: 1; }
+        }
+
+        .flip-out { animation: flip-out 0.3s ease-in-out forwards; }
+        .flip-in { animation: flip-in 0.3s ease-in-out forwards; }
+
+        .form-section-animated {
+            transform-style: preserve-3d;
+            perspective: 1000px;
+        }
+
+        /* 前后对比滑块容器 */
+        .comparison-container {
+            position: relative;
+            width: 100%;
+            height: auto;
+            overflow: hidden;
+            border-radius: 8px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        #original-image-comp {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: auto;
+            max-width: none;
+            clip-path: inset(0 0 0 50%);
+            transition: clip-path 0.3s ease;
+            object-fit: contain;
+        }
+
+        #result-image-comp {
+            position: relative;
+            display: block;
+            width: 100%;
+            height: auto;
+            object-fit: contain;
+        }
+
+        .slider {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 20px;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            cursor: ew-resize;
+            z-index: 2;
+            border-left: 2px solid #fff;
+            border-right: 2px solid #fff;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .slider::before {
+            content: '↔';
+            color: #333;
+            font-size: 18px;
+        }
+
+        /* 结果历史画廊 */
+        .history-gallery {
+            margin-top: 30px;
+            border-top: 2px solid rgba(0, 0, 0, 0.1);
+            padding-top: 20px;
+            text-align: center;
+        }
+
+        .history-gallery h3 {
+            margin-bottom: 15px;
+            color: #444;
+        }
+
+        .gallery-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .gallery-item {
+            width: 100px;
+            height: 100px;
+            cursor: pointer;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .gallery-item:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* 放大镜功能 */
+        .magnifier-container {
+            position: relative;
+            display: inline-block;
+            cursor: default; /* 默认光标 */
+        }
+
+        .magnifier-container.active-magnifier {
+            cursor: none; /* 激活时隐藏光标 */
+        }
+
+        .magnifier-lens {
+            position: absolute;
+            border: 2px solid #fff;
+            border-radius: 50%;
+            background-repeat: no-repeat;
+            pointer-events: none;
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
+            display: none; /* 默认隐藏 */
+            z-index: 100;
+        }
+
+        .magnifier-controls {
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        #magnifier-toggle {
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s ease;
+        }
+
+        #magnifier-toggle:hover {
+            background: rgba(255, 255, 255, 0.8);
+            transform: scale(1.1);
+        }
+
+        .magnifier-controls label {
+            font-size: 14px;
+            font-weight: normal;
+        }
+
+        #magnification-factor {
+            width: 100px;
+            -webkit-appearance: none;
+            height: 5px;
+            background: rgba(0, 0, 0, 0.1);
+            outline: none;
+            border-radius: 5px;
+        }
+
+        #magnification-factor::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: #6a11cb;
+            cursor: pointer;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+
+        #magnification-factor::-moz-range-thumb {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background: #6a11cb;
+            cursor: pointer;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+
     </style>
 </head>
 <body>
     <header>
-        <h1>图片上传与转换</h1>
+        <h1>图片处理系统</h1>
     </header>
-    <div class="container">
-        <form id="upload-form" action="/upload" method="post" enctype="multipart/form-data">
-            <div class="form-section">
-                <label for="file">选择文件:</label>
-                <input type="file" name="file" id="file" accept="image/*" required>
-            </div>
-
-            <div class="form-section">
-                <label for="conversion_type">选择转换类型:</label>
-                <select name="conversion_type" id="conversion_type" required>
-                    <option value="">请选择</option>
-                    <option value="grayscale">灰度化</option>
-                    <option value="enhancement">图像增强</option>
-                    <option value="segmentation">图像分割</option>
-                    <option value="object_detection">目标检测</option>
-                    <option value="dehaze">去雾</option>
-                </select>
-            </div>
-
-            <div id="method-options" class="form-section hidden">
-                <label for="method_type">选择具体方法:</label>
-                <select name="method_type" id="method_type" required>
-                    <!-- 具体方法选项将在脚本中动态填充 -->
-                </select>
-            </div>
-
-            <button type="submit">上传并转换</button>
-        </form>
-
-        <div class="loader" id="loader"></div>
-
-        <div id="result">
-            <h2>转换结果:</h2>
-            <div class="image-container">
-                <div class="image-wrapper">
-                    <p>原图</p>
-                    <img id="original-image" src="" alt="原图" />
+    <div class="main-container">
+        <div class="card options-card" id="options-card">
+            <h2 id="options-card-title">处理选项</h2>
+            <form id="upload-form" action="/upload" method="post" enctype="multipart/form-data">
+                <div class="form-section form-section-animated">
+                    <label for="file">选择文件:</label>
+                    <input type="file" name="file" id="file" accept="image/*" required>
                 </div>
-                <div class="image-wrapper">
-                    <p>处理后图片</p>
-                    <img id="result-image" src="" alt="转换后的图片" />
+
+                <div class="form-section form-section-animated">
+                    <label for="conversion_type">选择转换类型:</label>
+                    <select name="conversion_type" id="conversion_type" required>
+                        <option value="">请选择</option>
+                        <option value="grayscale">灰度化</option>
+                        <option value="enhancement">图像增强</option>
+                        <option value="segmentation">图像分割</option>
+                        <option value="object_detection">目标检测</option>
+                        <option value="dehaze">去雾</option>
+                    </select>
                 </div>
-            </div>
-            <div class="save-options">
-                <input type="text" id="filename" placeholder="输入文件名" />
-                <button id="save-original-button" style="display:none;">保存原图</button>
-                <button id="save-result-button" style="display:none;">保存处理后图片</button>
+
+                <div id="method-options" class="form-section form-section-animated hidden">
+                    <label for="method_type">选择具体方法:</label>
+                    <select name="method_type" id="method_type" required>
+                        </select>
+                </div>
+
+                <div id="selected-options-display" class="selected-options hidden">
+                    <h3>已选选项</h3>
+                    <p id="selected-conversion-text"></p>
+                    <p id="selected-method-text"></p>
+                </div>
+
+                <button type="submit" id="submit-button">上传并转换</button>
+            </form>
+        </div>
+
+        <div class="card result-card" id="result-card">
+            <h2>处理结果</h2>
+            <div class="loader" id="loader"></div>
+            <div id="result">
+                <div class="comparison-container" id="comparison-container">
+                    <img id="result-image-comp" src="" alt="转换后的图片" style="display:none;" />
+                    <img id="original-image-comp" src="" alt="原图" style="display:none;" />
+                    <div class="slider" id="slider-handle" style="display:none;"></div>
+                </div>
+
+                <div class="image-container">
+                    <div class="image-wrapper">
+                        <p>原图</p>
+                        <img id="original-image" src="" alt="原图" />
+                    </div>
+                    <div class="image-wrapper magnifier-container" id="result-image-wrapper">
+                        <p>处理后图片</p>
+                        <img id="result-image" src="" alt="转换后的图片" />
+                        <div id="magnifier-lens" class="magnifier-lens"></div>
+                    </div>
+                </div>
+
+                <div class="magnifier-controls hidden">
+                    <button id="magnifier-toggle">🔍</button>
+                    <label for="magnification-factor">放大倍数:</label>
+                    <input type="range" id="magnification-factor" min="1.5" max="5" value="2.5" step="0.5">
+                    <span id="magnification-value">2.5x</span>
+                </div>
+
+                <div class="save-options">
+                    <input type="text" id="filename" placeholder="输入文件名" />
+                    <button id="save-result-button" class="hidden">保存处理后图片</button>
+                </div>
+
+                <div class="history-gallery hidden" id="history-gallery">
+                    <h3>处理历史</h3>
+                    <div class="gallery-container" id="gallery-container">
+                        </div>
+                </div>
             </div>
         </div>
     </div>
@@ -249,6 +569,9 @@
     </footer>
 
     <script>
+        const optionsCard = document.getElementById('options-card');
+        const resultCard = document.getElementById('result-card');
+        const optionsCardTitle = document.getElementById('options-card-title');
         const conversionType = document.getElementById('conversion_type');
         const methodOptions = document.getElementById('method-options');
         const methodType = document.getElementById('method_type');
@@ -256,10 +579,41 @@
         const resultDiv = document.getElementById('result');
         const originalImage = document.getElementById('original-image');
         const resultImage = document.getElementById('result-image');
-        const saveOriginalButton = document.getElementById('save-original-button');
         const saveResultButton = document.getElementById('save-result-button');
         const fileInput = document.getElementById('file');
+        const selectedOptionsDisplay = document.getElementById('selected-options-display');
+        const selectedConversionText = document.getElementById('selected-conversion-text');
+        const selectedMethodText = document.getElementById('selected-method-text');
+        const historyGallery = document.getElementById('history-gallery');
+        const galleryContainer = document.getElementById('gallery-container');
 
+        // 放大镜元素
+        const resultImageWrapper = document.getElementById('result-image-wrapper');
+        const magnifierControls = document.querySelector('.magnifier-controls');
+        const magnifierToggle = document.getElementById('magnifier-toggle');
+        const magnifierLens = document.getElementById('magnifier-lens');
+        const magnificationFactorInput = document.getElementById('magnification-factor');
+        const magnificationValueSpan = document.getElementById('magnification-value');
+
+        // 前后对比滑块元素
+        const comparisonContainer = document.getElementById('comparison-container');
+        const originalImageComp = document.getElementById('original-image-comp');
+        const resultImageComp = document.getElementById('result-image-comp');
+        const sliderHandle = document.getElementById('slider-handle');
+
+        // 图片 URLs 缓存
+        const imageCache = {
+            original: null,
+            result: null,
+            history: []
+        };
+
+        // 放大镜状态
+        let isMagnifierActive = false;
+        let magnifierSize = 150; // 放大镜的尺寸
+        let magnificationFactor = 2.5; // 默认放大倍数
+
+        // 方法映射表
         const methodMapping = {
             grayscale: [
                 { value: 'luminosity', text: '亮度法' },
@@ -298,42 +652,124 @@
             ]
         };
 
-        // 当用户选择文件时，立即显示原图
+        function updateSelectedOptions() {
+            const selectedConversion = conversionType.options[conversionType.selectedIndex];
+            const selectedMethod = methodType.options[methodType.selectedIndex];
+
+            if (selectedConversion && selectedConversion.value) {
+                selectedConversionText.textContent = `转换类型: ${selectedConversion.textContent}`;
+            } else {
+                selectedConversionText.textContent = '';
+            }
+
+            if (selectedMethod && selectedMethod.value) {
+                selectedMethodText.textContent = `具体方法: ${selectedMethod.textContent}`;
+            } else {
+                selectedMethodText.textContent = '';
+            }
+
+            if (selectedConversion.value) {
+                selectedOptionsDisplay.classList.remove('hidden');
+            } else {
+                selectedOptionsDisplay.classList.add('hidden');
+            }
+        }
+
         fileInput.onchange = function() {
             const file = fileInput.files[0];
             if (file) {
                 const url = URL.createObjectURL(file);
                 originalImage.src = url;
                 originalImage.style.display = 'block';
+                resultImage.src = '';
+                resultDiv.classList.remove('show');
+                saveResultButton.classList.add('hidden');
+                magnifierControls.classList.add('hidden');
+
+                imageCache.original = url;
+                originalImageComp.src = url;
             }
         };
 
         conversionType.onchange = function() {
             const selectedValue = this.value;
+            const container = document.querySelector('#method-options');
 
-            if (selectedValue && methodMapping[selectedValue]) {
-                methodType.innerHTML = '';
-                methodMapping[selectedValue].forEach(method => {
-                    const option = document.createElement('option');
-                    option.value = method.value;
-                    option.textContent = method.text;
-                    methodType.appendChild(option);
-                });
-                methodOptions.classList.remove('hidden');
-            } else {
-                methodOptions.classList.add('hidden');
-                methodType.innerHTML = '';
+            if (container) {
+                container.classList.add('flip-out');
+                setTimeout(() => {
+                    if (selectedValue && methodMapping[selectedValue]) {
+                        methodType.innerHTML = '';
+                        methodMapping[selectedValue].forEach(method => {
+                            const option = document.createElement('option');
+                            option.value = method.value;
+                            option.textContent = method.text;
+                            methodType.appendChild(option);
+                        });
+                        methodOptions.classList.remove('hidden');
+                    } else {
+                        methodOptions.classList.add('hidden');
+                        methodType.innerHTML = '';
+                    }
+                    updateSelectedOptions();
+                    container.classList.remove('flip-out');
+                    container.classList.add('flip-in');
+                    setTimeout(() => {
+                        container.classList.remove('flip-in');
+                    }, 300);
+                }, 300);
             }
         };
+
+        methodType.onchange = function() {
+            const container = document.getElementById('selected-options-display');
+            if (container) {
+                container.classList.add('flip-out');
+                setTimeout(() => {
+                    updateSelectedOptions();
+                    container.classList.remove('flip-out');
+                    container.classList.add('flip-in');
+                    setTimeout(() => {
+                        container.classList.remove('flip-in');
+                    }, 300);
+                }, 300);
+            }
+        };
+
+        function showResultView() {
+            optionsCard.classList.remove('expanded');
+            optionsCard.classList.add('minimized');
+            optionsCardTitle.classList.add('hidden');
+
+            resultCard.classList.remove('result-card');
+            resultCard.classList.add('expanded');
+        }
+
+        function showOptionsView() {
+            optionsCard.classList.remove('minimized');
+            optionsCard.classList.add('expanded');
+            optionsCardTitle.classList.remove('hidden');
+
+            resultCard.classList.remove('expanded');
+            resultCard.classList.add('result-card');
+        }
+
+        optionsCard.addEventListener('click', () => {
+            if (optionsCard.classList.contains('minimized')) {
+                showOptionsView();
+            }
+        });
 
         document.getElementById('upload-form').onsubmit = async function(event) {
             event.preventDefault();
 
-            // 重置结果图片
-            resultImage.src = '';
-            resultDiv.classList.remove('show');
-
             loader.style.display = 'block';
+            resultDiv.classList.remove('show');
+            saveResultButton.classList.add('hidden');
+
+            comparisonContainer.style.display = 'none';
+            sliderHandle.style.display = 'none';
+            magnifierControls.classList.add('hidden');
 
             let formData = new FormData(this);
             let response = await fetch('/upload', {
@@ -345,34 +781,24 @@
                 const imageBlob = await response.blob();
                 const imageUrl = URL.createObjectURL(imageBlob);
 
-                // 显示处理后的图片
+                showResultView();
+
+                imageCache.result = imageUrl;
+
                 resultImage.src = imageUrl;
-
-                // 显示保存按钮
-                saveOriginalButton.style.display = 'inline-block';
-                saveResultButton.style.display = 'inline-block';
-
+                saveResultButton.classList.remove('hidden');
                 resultDiv.classList.add('show');
+
+                setupComparisonSlider();
+                setupMagnifier();
+                addResultToGallery(imageUrl);
+
             } else {
                 const errorMsg = await response.json();
                 alert(errorMsg.error);
             }
 
             loader.style.display = 'none';
-
-            // 重置文件输入框
-            fileInput.value = '';
-
-            // 重置表单状态
-            this.reset();
-        };
-
-        saveOriginalButton.onclick = function() {
-            const link = document.createElement('a');
-            link.href = originalImage.src;
-            const filename = document.getElementById('filename').value || 'original.png';
-            link.download = filename.endsWith('.png') ? filename : filename + '.png';
-            link.click();
         };
 
         saveResultButton.onclick = function() {
@@ -382,6 +808,119 @@
             link.download = filename.endsWith('.png') ? filename : filename + '.png';
             link.click();
         };
+
+        function setupComparisonSlider() {
+            if (!imageCache.original || !imageCache.result) {
+                comparisonContainer.style.display = 'none';
+                return;
+            }
+
+            comparisonContainer.style.display = 'block';
+            originalImageComp.src = imageCache.original;
+            resultImageComp.src = imageCache.result;
+            originalImageComp.style.display = 'block';
+            resultImageComp.style.display = 'block';
+            sliderHandle.style.display = 'block';
+
+            let isDragging = false;
+
+            sliderHandle.onmousedown = (e) => {
+                isDragging = true;
+                e.preventDefault();
+            };
+
+            document.onmouseup = () => {
+                isDragging = false;
+            };
+
+            comparisonContainer.onmousemove = (e) => {
+                if (!isDragging) return;
+                const rect = comparisonContainer.getBoundingClientRect();
+                let x = e.clientX - rect.left;
+                if (x < 0) x = 0;
+                if (x > rect.width) x = rect.width;
+
+                sliderHandle.style.left = `${x}px`;
+                originalImageComp.style.clipPath = `inset(0 0 0 ${x}px)`;
+            };
+
+            const initialX = comparisonContainer.clientWidth / 2;
+            sliderHandle.style.left = `${initialX}px`;
+            originalImageComp.style.clipPath = `inset(0 0 0 ${initialX}px)`;
+        }
+
+        function addResultToGallery(imageUrl) {
+            historyGallery.classList.remove('hidden');
+            const galleryItem = document.createElement('div');
+            galleryItem.classList.add('gallery-item');
+
+            const img = document.createElement('img');
+            img.src = imageUrl;
+            img.alt = '处理历史图片';
+
+            galleryItem.appendChild(img);
+            galleryContainer.appendChild(galleryItem);
+
+            galleryItem.onclick = () => {
+                resultImage.src = imageUrl;
+                imageCache.result = imageUrl;
+                setupComparisonSlider();
+            };
+        }
+
+        function setupMagnifier() {
+            magnifierControls.classList.remove('hidden');
+            magnificationFactorInput.value = magnificationFactor;
+            magnificationValueSpan.textContent = `${magnificationFactor}x`;
+
+            magnifierToggle.onclick = () => {
+                isMagnifierActive = !isMagnifierActive;
+                if (isMagnifierActive) {
+                    magnifierToggle.style.backgroundColor = 'rgba(106, 17, 203, 0.5)';
+                    resultImageWrapper.classList.add('active-magnifier');
+                } else {
+                    magnifierToggle.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
+                    magnifierLens.style.display = 'none';
+                    resultImageWrapper.classList.remove('active-magnifier');
+                }
+            };
+
+            magnificationFactorInput.oninput = (e) => {
+                magnificationFactor = e.target.value;
+                magnificationValueSpan.textContent = `${magnificationFactor}x`;
+            };
+
+            resultImage.addEventListener('mousemove', (e) => {
+                if (!isMagnifierActive) return;
+
+                magnifierLens.style.display = 'block';
+
+                const rect = resultImage.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                let lensSize = magnifierSize;
+                let backgroundSizeX = resultImage.naturalWidth * magnificationFactor;
+                let backgroundSizeY = resultImage.naturalHeight * magnificationFactor;
+
+                let backgroundPosX = -x * magnificationFactor + lensSize / 2;
+                let backgroundPosY = -y * magnificationFactor + lensSize / 2;
+
+                magnifierLens.style.width = `${lensSize}px`;
+                magnifierLens.style.height = `${lensSize}px`;
+                magnifierLens.style.left = `${x - lensSize / 2}px`;
+                magnifierLens.style.top = `${y - lensSize / 2}px`;
+                magnifierLens.style.backgroundImage = `url(${resultImage.src})`;
+                magnifierLens.style.backgroundSize = `${backgroundSizeX}px ${backgroundSizeY}px`;
+                magnifierLens.style.backgroundPosition = `${backgroundPosX}px ${backgroundPosY}px`;
+            });
+
+            resultImage.addEventListener('mouseleave', () => {
+                if (isMagnifierActive) {
+                    magnifierLens.style.display = 'none';
+                }
+            });
+        }
     </script>
 </body>
 </html>
