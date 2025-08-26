@@ -21,7 +21,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(RESULT_FOLDER, exist_ok=True)
 
 # 加载 AOD-Net 模型
-def load_aod_net(model_path):
+def load_aOD_net(model_path):
     net = torch.load(model_path)
     return net
 
@@ -33,10 +33,10 @@ def load_yolo_model(model_path):
 
 # 加载 Faster R-CNN 模型
 def load_faster_rcnn_model(model_path):
-    model = fasterrcnn_resnet50_fpn(weights=None)  # 初始化未加载权重的模型
-    state_dict = torch.load(model_path)  # 加载权重文件
-    model.load_state_dict(state_dict)  # 加载权重到模型
-    model.eval()  # 设置为推理模式
+    model = fasterrcnn_resnet50_fpn(weights=None)
+    state_dict = torch.load(model_path)
+    model.load_state_dict(state_dict)
+    model.eval()
     return model
 
 # 使用预下载的模型路径
@@ -68,21 +68,22 @@ def upload_file():
 
         conversion_type = request.form.get('conversion_type')
         method_type = request.form.get('method_type')
+        params = request.form.to_dict()
 
-        print(f"转换类型: {conversion_type}, 方法: {method_type}")
+        print(f"转换类型: {conversion_type}, 方法: {method_type}, 参数: {params}")
 
         try:
             if conversion_type == 'grayscale':
                 result_image = convert_image(file_path, method_type)
             elif conversion_type == 'enhancement':
-                result_image = enhance_image(file_path, method_type)
+                result_image = enhance_image(file_path, method_type, params)
             elif conversion_type == 'segmentation':
-                result_image = segment_image(file_path, method_type)
+                result_image = segment_image(file_path, method_type, params)
             elif conversion_type == 'object_detection':
                 if method_type == 'yolo':
-                    result_image = apply_yolo_detection(file_path)
+                    result_image = apply_yolo_detection(file_path, params)
                 elif method_type == 'faster_rcnn':
-                    result_image = apply_faster_rcnn_detection(file_path)
+                    result_image = apply_faster_rcnn_detection(file_path, params)
                 else:
                     return jsonify({'error': '无效的目标检测方法！'}), 400
             elif conversion_type == 'dehaze':
@@ -104,7 +105,6 @@ def upload_file():
 
 def convert_image(image_path, grayscale_type):
     img = Image.open(image_path)
-
     img_array = np.array(img)
     if grayscale_type == 'luminosity':
         gray = 0.21 * img_array[:, :, 0] + 0.72 * img_array[:, :, 1] + 0.07 * img_array[:, :, 2]
@@ -120,192 +120,167 @@ def convert_image(image_path, grayscale_type):
         gray = 0.5 * img_array[:, :, 0] + 0.3 * img_array[:, :, 1] + 0.2 * img_array[:, :, 2]
     else:
         raise ValueError("无效的灰度化方法")
-
     return Image.fromarray(gray.astype(np.uint8))
 
-def enhance_image(image_path, enhancement_type):
+def enhance_image(image_path, enhancement_type, params):
     img = Image.open(image_path)
-
     if enhancement_type == 'histogram_equalization':
         img = img.convert('L')
         img_array = np.array(img)
         img_eq = ImageOps.equalize(Image.fromarray(img_array))
         return img_eq
     elif enhancement_type == 'contrast_stretching':
+        p_low = float(params.get('p_low', 2))
+        p_high = float(params.get('p_high', 98))
         img_array = np.array(img)
-        p2, p98 = np.percentile(img_array, (2, 98))
-        img_cs = np.clip((img_array - p2) / (p98 - p2) * 255, 0, 255).astype(np.uint8)
+        p_low_val, p_high_val = np.percentile(img_array, (p_low, p_high))
+        img_cs = np.clip((img_array - p_low_val) / (p_high_val - p_low_val) * 255, 0, 255).astype(np.uint8)
         return Image.fromarray(img_cs)
     elif enhancement_type == 'gamma_correction':
-        gamma = 2.2
+        gamma = float(params.get('gamma', 2.2))
         img_array = np.array(img) / 255.0
         img_corrected = np.power(img_array, gamma) * 255
         return Image.fromarray(img_corrected.astype(np.uint8))
     elif enhancement_type == 'color_enhancement':
+        factor = float(params.get('factor', 1.2))
         img_array = np.array(img)
-        img_enhanced = np.clip(img_array * 1.2, 0, 255).astype(np.uint8)
+        img_enhanced = np.clip(img_array * factor, 0, 255).astype(np.uint8)
         return Image.fromarray(img_enhanced)
     elif enhancement_type == 'sharpening':
-        kernel = np.array([[0, -1, 0],
-                           [-1, 5, -1],
-                           [0, -1, 0]])
+        strength = int(params.get('strength', 5))
+        kernel = np.array([[0, -1, 0], [-1, strength, -1], [0, -1, 0]])
         img_array = np.array(img)
         img_sharpened = Image.fromarray(cv2.filter2D(img_array, -1, kernel))
         return img_sharpened
     elif enhancement_type == 'high_pass_filter':
-        kernel = np.array([[-1, -1, -1],
-                           [-1, 8, -1],
-                           [-1, -1, -1]])
         img_array = np.array(img.convert('L'))
+        kernel = np.array([[-1, -1, -1], [-1, 8, -1], [-1, -1, -1]])
         img_filtered = cv2.filter2D(img_array, -1, kernel)
-        img_filtered = np.clip(img_filtered, 0, 255).astype(np.uint8)
-        return Image.fromarray(img_filtered)
+        return Image.fromarray(np.clip(img_filtered, 0, 255).astype(np.uint8))
     elif enhancement_type == 'low_pass_filter':
-        kernel = np.ones((5, 5), np.float32) / 25
+        kernel_size = int(params.get('kernel_size', 5))
+        if kernel_size % 2 == 0: kernel_size += 1 # Ensure odd kernel size
+        kernel = np.ones((kernel_size, kernel_size), np.float32) / (kernel_size**2)
         img_array = np.array(img.convert('L'))
         img_filtered = cv2.filter2D(img_array, -1, kernel)
-        img_filtered = np.clip(img_filtered, 0, 255).astype(np.uint8)
-        return Image.fromarray(img_filtered)
+        return Image.fromarray(np.clip(img_filtered, 0, 255).astype(np.uint8))
     elif enhancement_type == 'wavelet_transform':
         img_array = np.array(img.convert('L'))
         coeffs = pywt.wavedec2(img_array, 'haar', level=2)
         coeffs[0] = np.zeros_like(coeffs[0])
         img_wavelet = pywt.waverec2(coeffs, 'haar')
-        img_wavelet = np.clip(img_wavelet, 0, 255).astype(np.uint8)
-        return Image.fromarray(img_wavelet)
+        return Image.fromarray(np.clip(img_wavelet, 0, 255).astype(np.uint8))
     else:
         raise ValueError("无效的增强方法")
 
-def segment_image(image_path, segmentation_type):
+def segment_image(image_path, segmentation_type, params):
     img = Image.open(image_path)
     img_array = np.array(img.convert('L'))
 
     if segmentation_type == 'thresholding':
-        _, segmented = cv2.threshold(img_array, 128, 255, cv2.THRESH_BINARY)
-        img = Image.fromarray(segmented)
+        threshold = int(params.get('threshold', 128))
+        _, segmented = cv2.threshold(img_array, threshold, 255, cv2.THRESH_BINARY)
+        return Image.fromarray(segmented)
     elif segmentation_type == 'region_growing':
-        def region_grow(img, seed, threshold=30):
-            visited = np.zeros_like(img, dtype=bool)
-            region = np.zeros_like(img, dtype=np.uint8)
+        def region_grow(img_arr, seed, threshold):
+            visited = np.zeros_like(img_arr, dtype=bool)
+            region = np.zeros_like(img_arr, dtype=np.uint8)
             stack = [seed]
-            seed_value = img[seed]
-
+            seed_value = img_arr[seed]
             while stack:
                 x, y = stack.pop()
-                if not visited[x, y] and abs(int(img[x, y]) - int(seed_value)) <= threshold:
+                if not visited[x, y] and abs(int(img_arr[x, y]) - int(seed_value)) <= threshold:
                     visited[x, y] = True
                     region[x, y] = 255
                     for nx, ny in [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)]:
-                        if 0 <= nx < img.shape[0] and 0 <= ny < img.shape[1] and not visited[nx, ny]:
+                        if 0 <= nx < img_arr.shape[0] and 0 <= ny < img_arr.shape[1] and not visited[nx, ny]:
                             stack.append((nx, ny))
             return region
-
-        # 使用高斯模糊减少噪声
+        threshold = int(params.get('grow_threshold', 30))
         img_smoothed = cv2.GaussianBlur(img_array, (5, 5), 0)
-        seed = (img_smoothed.shape[0] // 2, img_smoothed.shape[1] // 2)  # 中心点
-        segmented = region_grow(img_smoothed, seed, threshold=30)
+        seed = (img_smoothed.shape[0] // 2, img_smoothed.shape[1] // 2)
+        segmented = region_grow(img_smoothed, seed, threshold)
+        return Image.fromarray(segmented)
     elif segmentation_type == 'kmeans':
-        img_array = img_array.reshape(-1, 1).astype(np.float32)
+        k = int(params.get('k_clusters', 2))
+        pixels = img_array.reshape(-1, 1).astype(np.float32)
         criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
-        _, labels, centers = cv2.kmeans(img_array, 2, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
+        _, labels, centers = cv2.kmeans(pixels, k, None, criteria, 10, cv2.KMEANS_RANDOM_CENTERS)
         segmented = centers[labels.flatten()].reshape(img.size[::-1]).astype(np.uint8)
-        img = Image.fromarray(segmented)
+        return Image.fromarray(segmented)
+    elif segmentation_type == 'canny':
+        threshold1 = int(params.get('threshold1', 100))
+        threshold2 = int(params.get('threshold2', 200))
+        edge = cv2.Canny(img_array, threshold1, threshold2)
+        return Image.fromarray(edge)
+    # Sobel, Laplacian, Prewitt remain without params for simplicity
     elif segmentation_type == 'sobel':
         sobel_x = cv2.Sobel(img_array, cv2.CV_64F, 1, 0, ksize=3)
         sobel_y = cv2.Sobel(img_array, cv2.CV_64F, 0, 1, ksize=3)
-        edge = np.sqrt(sobel_x ** 2 + sobel_y ** 2)
+        edge = np.sqrt(sobel_x**2 + sobel_y**2)
         edge = (edge / edge.max() * 255).astype(np.uint8)
-        img = Image.fromarray(edge)
+        return Image.fromarray(edge)
     elif segmentation_type == 'laplacian':
-        edge = cv2.Laplacian(img_array, cv2.CV_64F, ksize=3)  # 使用3x3核增强细节
-        edge = cv2.convertScaleAbs(edge)  # 取绝对值以避免负值
-        edge = cv2.equalizeHist(edge)  # 进行直方图均衡化
-        img = Image.fromarray(edge)
-    elif segmentation_type == 'canny':
-        edge = cv2.Canny(img_array, 100, 200)
-        img = Image.fromarray(edge)
+        edge = cv2.Laplacian(img_array, cv2.CV_64F, ksize=3)
+        edge = cv2.convertScaleAbs(edge)
+        return Image.fromarray(cv2.equalizeHist(edge))
     elif segmentation_type == 'prewitt':
         kernel_x = np.array([[-1, 0, 1], [-1, 0, 1], [-1, 0, 1]])
         kernel_y = np.array([[1, 1, 1], [0, 0, 0], [-1, -1, -1]])
         prewitt_x = cv2.filter2D(img_array, -1, kernel_x)
         prewitt_y = cv2.filter2D(img_array, -1, kernel_y)
-        edge = np.sqrt(prewitt_x ** 2 + prewitt_y ** 2)
+        edge = np.sqrt(prewitt_x**2 + prewitt_y**2)
         edge = (edge / edge.max() * 255).astype(np.uint8)
-        img = Image.fromarray(edge)
+        return Image.fromarray(edge)
     else:
         raise ValueError("无效的分割方法")
 
-    return img
-
-# 应用 YOLOv5 目标检测
-def apply_yolo_detection(image_path):
+def apply_yolo_detection(image_path, params):
+    confidence = float(params.get('confidence', 0.5))
     results = yolo_model(image_path)
     img = Image.open(image_path).convert("RGB")
     draw = ImageDraw.Draw(img)
-
     for result in results[0].boxes.data:
-        x1, y1, x2, y2, confidence, cls_id = result[:6]
-        cls_name = yolo_model.names[int(cls_id)]
-        draw.rectangle([x1, y1, x2, y2], outline="red", width=2)
-        draw.text((x1, y1), f"{cls_name} {confidence:.2f}", fill="red")
-
+        x1, y1, x2, y2, conf, cls_id = result[:6]
+        if conf >= confidence:
+            cls_name = yolo_model.names[int(cls_id)]
+            draw.rectangle([x1, y1, x2, y2], outline="red", width=2)
+            draw.text((x1, y1), f"{cls_name} {conf:.2f}", fill="red")
     return img
 
-# 应用 Faster R-CNN 目标检测
-def apply_faster_rcnn_detection(image_path):
+def apply_faster_rcnn_detection(image_path, params):
+    confidence = float(params.get('confidence', 0.5))
     img = Image.open(image_path).convert("RGB")
-    img_tensor = F.to_tensor(img).unsqueeze(0)  # 转换为 PyTorch 张量，增加批次维度
-
+    img_tensor = F.to_tensor(img).unsqueeze(0)
     with torch.no_grad():
-        predictions = faster_rcnn_model(img_tensor)  # 推理
-
-    # 提取检测结果
+        predictions = faster_rcnn_model(img_tensor)
     boxes = predictions[0]['boxes'].cpu().numpy()
     scores = predictions[0]['scores'].cpu().numpy()
     labels = predictions[0]['labels'].cpu().numpy()
-
-    # 绘制边界框
     draw = ImageDraw.Draw(img)
     for box, score, label in zip(boxes, scores, labels):
-        if score > 0.5:  # 置信度阈值
+        if score > confidence:
             x1, y1, x2, y2 = box
             draw.rectangle([x1, y1, x2, y2], outline="blue", width=2)
             draw.text((x1, y1), f"Class {label}: {score:.2f}", fill="blue")
-
     return img
 
-# 暗通道先验去雾
 def dehaze_dark_channel(image_path):
-    """暗通道去雾处理"""
-    # 使用PIL读取图像并转换为NumPy数组
-    image = Image.open(image_path)
-    image = np.array(image)  # 转换为NumPy数组
-    if image is None:
-        raise ValueError("Image not found or invalid image path.")
-
-    # 计算暗通道
-    min_channel = np.min(image, axis=2)  # 获取每个像素的最小颜色通道
-    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (15, 15))  # 创建结构元素
-    dark_channel = cv2.erode(min_channel, kernel)  # 腐蚀操作
-
-    # 估计大气光
+    image = np.array(Image.open(image_path))
+    min_channel = np.min(image, axis=2)
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (15, 15))
+    dark_channel = cv2.erode(min_channel, kernel)
     h, w = dark_channel.shape
-    num_pixels = int(0.001 * h * w)  # 取0.1%亮度最高的点
+    num_pixels = int(0.001 * h * w)
     indices = np.unravel_index(np.argsort(dark_channel.ravel())[-num_pixels:], dark_channel.shape)
-    atmospheric_light = np.mean(image[indices], axis=0)  # 计算大气光
-
-    # 估计透射率
-    norm_image = image / atmospheric_light  # 归一化
-    transmission = 1 - 0.95 * np.min(norm_image, axis=2)  # 透射率计算
-
-    # 恢复去雾图像
-    transmission = np.clip(transmission, 0.1, 1)  # 确保透射率不小于0.1
-    recovered_image = (image - atmospheric_light) / transmission[:, :, np.newaxis] + atmospheric_light  # 图像恢复
-    recovered_image = np.clip(recovered_image, 0, 255).astype(np.uint8)  # 归一化到0-255范围
-
+    atmospheric_light = np.mean(image[indices], axis=0)
+    norm_image = image / atmospheric_light
+    transmission = 1 - 0.95 * np.min(norm_image, axis=2)
+    transmission = np.clip(transmission, 0.1, 1)
+    recovered_image = (image - atmospheric_light) / transmission[:, :, np.newaxis] + atmospheric_light
+    recovered_image = np.clip(recovered_image, 0, 255).astype(np.uint8)
     return Image.fromarray(recovered_image)
 
-# AOD-Net 深度学习去雾
 def dehaze_aod_net(image_path):
     net = load_aod_net(aod_net_model_path)
     net = net.cuda()
@@ -313,21 +288,12 @@ def dehaze_aod_net(image_path):
         transforms.ToTensor(),
         transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
     ])
-
     img = Image.open(image_path).convert("RGB")
-    img_tensor = transform(img).unsqueeze_(0)  # 增加 batch 维度
-    val_img = Variable(img_tensor)
-    cuda_available = torch.cuda.is_available()
-    if cuda_available:
-        val_img = val_img.cuda()
-    #val_img = val_img.cuda()
-
+    img_tensor = transform(img).unsqueeze_(0)
+    val_img = Variable(img_tensor).cuda()
     prediction = net(val_img)
     prediction = prediction.data.cpu().numpy().squeeze().transpose((1, 2, 0))
-
-    # 将 [0, 1] 范围的输出转换为 [0, 255] 的整数
     prediction = (prediction * 255.0).astype(np.uint8)
-
     return Image.fromarray(prediction)
 
 if __name__ == '__main__':
