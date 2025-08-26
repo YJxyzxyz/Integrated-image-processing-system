@@ -97,30 +97,30 @@ Happy 2025
 
 为了极大地提升系统的交互性和实用性，计划为多数图像处理算法添加实时参数调整功能。用户在选择具体处理方法后，界面上将动态显示相关的参数滑块 (Sliders)。拖动滑块，处理结果将会实时更新，让用户可以即时观察到不同参数设置下的视觉效果。
 
-#### 将支持实时参数调整的方法和参数：
+将支持实时参数调整的方法和参数：
 
-1. **图像增强 (Enhancement)**:
-   - **对比度拉伸 (`contrast_stretching`)**:
+1. 图像增强 (Enhancement):
+   - 对比度拉伸 (`contrast_stretching`):
      - `低百分位 (p_low)`: 可调整范围 0-10，默认值 2。
      - `高百分位 (p_high)`: 可调整范围 90-100，默认值 98。
-   - **伽马校正 (`gamma_correction`)**:
+   - 伽马校正 (`gamma_correction`):
      - `伽马值 (gamma)`: 可调整范围 0.1-5.0，默认值 2.2。
-   - **色彩增强 (`color_enhancement`)**:
+   - 色彩增强 (`color_enhancement`):
      - `增强因子 (factor)`: 可调整范围 1.0-3.0，默认值 1.2。
-   - **锐化 (`sharpening`)**:
+   - 锐化 (`sharpening`):
      - `锐化强度 (strength)`: 可调整范围 1-10，通过调整卷积核中心值实现，默认值 5。
-   - **低通滤波 (`low_pass_filter`)**:
+   - 低通滤波 (`low_pass_filter`):
      - `核大小 (kernel_size)`: 可调整范围 3-15 (仅限奇数)，默认值 5。
-2. **图像分割 (Segmentation)**:
-   - **阈值分割 (`thresholding`)**:
+2. 图像分割 (Segmentation):
+   - 阈值分割 (thresholding):
      - `阈值 (threshold)`: 可调整范围 0-255，默认值 128。
-   - **区域生长 (`region_growing`)**:
+   - 区域生长 (region_growing):
      - `生长阈值 (threshold)`: 可调整范围 1-100，默认值 30。
-   - **K均值聚类 (`kmeans`)**:
+   - K均值聚类 (kmeans):
      - `聚类数 (K)`: 可选 2-8，默认值 2。
-   - **Canny 边缘检测 (`canny`)**:
+   - Canny 边缘检测 (canny):
      - `低阈值 (threshold1)`: 可调整范围 0-255，默认值 100。
      - `高阈值 (threshold2)`: 可调整范围 0-255，默认值 200。
-3. **目标检测 (Object Detection)**:
-   - **YOLOv5 (`yolo`)** 和 **Faster R-CNN (`faster_rcnn`)**:
+3. 目标检测 (Object Detection):
+   - YOLOv5 (yolo) 和 Faster R-CNN (faster_rcnn):
      - `置信度阈值 (confidence)`: 可调整范围 0.1-0.9，默认值 0.5。
