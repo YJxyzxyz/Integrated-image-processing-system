@@ -1,7 +1,4 @@
 <div align="center">
-
-<img src="https://raw.githubusercontent.com/ant-design/ant-design-icons/master/packages/icons-svg/svg/original/camera.svg" width="100px">
-
 <h1>Integrated Image Processing System</h1>
 
 <p>
